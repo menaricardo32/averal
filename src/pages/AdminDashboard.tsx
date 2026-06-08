@@ -91,11 +91,14 @@ import { initAdminOrderNotifications, getNotificationPermissionState, requestPus
 
 
 export default function AdminDashboard() {
-  const { user, profile, isAdmin, login, logout, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, login, loginWithPassword, logout, loading: authLoading } = useAuth();
   const { content, setIsEditing } = useContent();
   const { branding } = useBranding();
   const navigate = useNavigate();
   const [isProductionActive, setIsProductionActive] = useState(false);
+  const [customUsername, setCustomUsername] = useState('');
+  const [customPassword, setCustomPassword] = useState('');
+  const [customLoginError, setCustomLoginError] = useState('');
 
   useEffect(() => {
     const fetchProductionStatus = async () => {
@@ -329,16 +332,78 @@ export default function AdminDashboard() {
   if (authLoading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
 
   if (!user || !isAdmin) {
+    const handleCredentialSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setCustomLoginError('');
+      if (!customUsername || !customPassword) {
+        setCustomLoginError('Por favor ingresa usuario y contraseña.');
+        return;
+      }
+      const success = await loginWithPassword(customUsername, customPassword);
+      if (!success) {
+        setCustomLoginError('Usuario o contraseña incorrectos.');
+      }
+    };
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <div className="bg-white p-12 rounded-3xl shadow-xl text-center max-w-md w-full border border-gray-100">
-          <div className="bg-brand-orange/10 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-8">
+          <div className="bg-brand-orange/10 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <LayoutDashboard className="text-brand-orange" size={40} />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter mb-4">ACCESO RESTRINGIDO</h2>
-          <p className="text-gray-500 mb-8">Debes iniciar sesión con una cuenta de administrador para acceder a este panel.</p>
+          <h2 className="text-2xl font-black tracking-tighter mb-2">ACCESO RESTRINGIDO</h2>
+          <p className="text-gray-400 text-[10px] uppercase tracking-widest font-bold mb-6">Panel de Administración Averal</p>
+          
           {!user ? (
-            <button onClick={login} className="btn-primary w-full">Iniciar Sesión con Google</button>
+            <div className="space-y-6">
+              {/* Formulario de Credenciales de Admin */}
+              <form onSubmit={handleCredentialSubmit} className="space-y-4 text-left">
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 block mb-1">
+                    Usuario
+                  </label>
+                  <input
+                    type="text"
+                    value={customUsername}
+                    onChange={(e) => setCustomUsername(e.target.value)}
+                    placeholder="averal..."
+                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-50/80 focus:bg-white rounded-xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black shadow-inner"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 block mb-1">
+                    Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={customPassword}
+                    onChange={(e) => setCustomPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-50/80 focus:bg-white rounded-xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black shadow-inner"
+                  />
+                </div>
+
+                {customLoginError && (
+                  <p className="text-red-500 text-xs font-bold text-center mt-2 bg-red-50 py-2 rounded-lg border border-red-100">
+                    ⚠️ {customLoginError}
+                  </p>
+                )}
+
+                <button type="submit" className="btn-primary w-full py-3.5 mt-2 shadow-lg shadow-brand-orange/10 font-bold uppercase tracking-wider text-xs">
+                  Entrar al Panel
+                </button>
+              </form>
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gray-100"></div>
+                <span className="flex-shrink mx-4 text-gray-400 text-[10px] font-bold uppercase tracking-widest">O</span>
+                <div className="flex-grow border-t border-gray-100"></div>
+              </div>
+
+              <button onClick={login} className="btn-outline w-full py-3.5 flex items-center justify-center space-x-2 border-gray-200 hover:border-brand-orange text-brand-black font-bold uppercase tracking-wider text-xs">
+                <span>Acceder con Google</span>
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <p className="text-red-500 text-sm font-bold">Tu cuenta ({user.email}) no tiene permisos de administrador.</p>

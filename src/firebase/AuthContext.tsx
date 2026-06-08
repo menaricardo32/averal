@@ -20,6 +20,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   login: () => Promise<void>;
+  loginWithPassword: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -33,9 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
       if (firebaseUser) {
+        setUser(firebaseUser);
+        
         // Check if email is allowed admin
         const isSuperAdmin = firebaseUser.email === 'menaricardo333@gmail.com';
         let allowed = isSuperAdmin;
@@ -76,8 +77,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(newProfile);
         }
       } else {
+        // No Firebase user, check if there is a custom logged in user
+        const customSession = localStorage.getItem('custom_auth_session');
+        if (customSession) {
+          try {
+            const sessionData = JSON.parse(customSession);
+            if (sessionData.username === 'averal5258') {
+              const mockUser = {
+                uid: 'averal5258',
+                email: 'averal5258@averal.mx',
+                displayName: 'Administrador Averal',
+                photoURL: 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81'
+              } as any;
+              const mockProfile: UserProfile = {
+                uid: 'averal5258',
+                email: 'averal5258@averal.mx',
+                displayName: 'Admin Averal',
+                photoURL: 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81',
+                role: 'admin'
+              };
+              setUser(mockUser);
+              setProfile(mockProfile);
+              setIsAdmin(true);
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error("Error loading custom session", e);
+          }
+        }
         setProfile(null);
         setIsAdmin(false);
+        setUser(null);
       }
       
       setLoading(false);
@@ -135,12 +166,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithPassword = async (username: string, password: string): Promise<boolean> => {
+    if (username === 'averal5258' && password === '52as4852as48') {
+      const mockUser = {
+        uid: 'averal5258',
+        email: 'averal5258@averal.mx',
+        displayName: 'Administrador Averal',
+        photoURL: 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81'
+      } as any;
+      const mockProfile: UserProfile = {
+        uid: 'averal5258',
+        email: 'averal5258@averal.mx',
+        displayName: 'Admin Averal',
+        photoURL: 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81',
+        role: 'admin'
+      };
+
+      localStorage.setItem('custom_auth_session', JSON.stringify({ username }));
+      setUser(mockUser);
+      setProfile(mockProfile);
+      setIsAdmin(true);
+      return true;
+    }
+    return false;
+  };
+
   const logout = async () => {
+    localStorage.removeItem('custom_auth_session');
     await signOut(auth);
+    setUser(null);
+    setProfile(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, login, loginWithPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );
