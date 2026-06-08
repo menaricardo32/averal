@@ -86,6 +86,7 @@ import { onSnapshot, query, orderBy, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import ProductForm from '../components/ProductForm';
+import { initAdminOrderNotifications, getNotificationPermissionState, requestPushPermission } from '../firebase/push';
 
 
 export default function AdminDashboard() {
@@ -204,6 +205,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (isAdmin) {
       fetchData();
+      const unsubscribeNotifications = initAdminOrderNotifications();
+      return () => {
+        if (typeof unsubscribeNotifications === 'function') {
+          unsubscribeNotifications();
+        }
+      };
     }
   }, [isAdmin]);
 
@@ -1986,6 +1993,7 @@ const AtributosSection = ({ atributos, onSave, onEdit, onDelete }: {
 };
 
 const PWASection = () => {
+  const { user } = useAuth();
   const [pwaSettings, setPwaSettings] = useState<any>({
     name: "Averal Cosméticos México",
     shortName: "Averal",
@@ -1995,23 +2003,72 @@ const PWASection = () => {
     displayMode: "standalone",
     orientation: "portrait",
     icon192: "",
-    icon512: ""
+    icon512: "",
+    fcmServerKey: ""
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [editingField, setEditingField] = useState<'icon192' | 'icon512' | null>(null);
+  
+  const [permissionState, setPermissionState] = useState<string>('unknown');
+  const [testNotificationStatus, setTestNotificationStatus] = useState<string>('');
 
   useEffect(() => {
     const docRef = doc(db, 'settings', 'pwa');
     const unsub = onSnapshot(docRef, (snap) => {
       if (snap.exists()) {
-        setPwaSettings(snap.data());
+        const data = snap.data();
+        setPwaSettings((prev: any) => ({
+          ...prev,
+          ...data
+        }));
       }
       setIsLoading(false);
     });
+
+    // Check device notification permission
+    getNotificationPermissionState().then(state => {
+      setPermissionState(state);
+    });
+
     return () => unsub();
   }, []);
+
+  const handleRequestPermission = async () => {
+    const email = user?.email || 'admin@averal.mx';
+    const success = await requestPushPermission(email);
+    if (success) {
+      setPermissionState('granted');
+    } else {
+      const updatedState = await getNotificationPermissionState();
+      setPermissionState(updatedState);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setTestNotificationStatus('Enviando...');
+    try {
+      const response = await fetch('/api/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🔔 Notificación de Prueba',
+          body: 'Las notificaciones push de Averal están configuradas correctamente.',
+          url: '/admin'
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTestNotificationStatus('¡Enviada con éxito!');
+      } else {
+        setTestNotificationStatus('Error: ' + (data.message || 'Error en envío'));
+      }
+    } catch (err: any) {
+      setTestNotificationStatus('Error: ' + err.message);
+    }
+    setTimeout(() => setTestNotificationStatus(''), 5000);
+  };
 
   const handleSaveField = async (field: string, value: any) => {
     setIsSaving(true);
@@ -2237,6 +2294,81 @@ const PWASection = () => {
             <ImageIcon size={18} />
             <span>{pwaSettings.icon512 ? 'Cambiar Icono 512px' : 'Subir Icono 512px'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Configuración de Notificaciones Push */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+        <div>
+          <h3 className="font-black text-xl tracking-tighter uppercase mb-1">Notificaciones Push de Pedidos</h3>
+          <p className="text-gray-400 text-sm">Recibe alertas en este celular o computadora al instante de que se realice un nuevo pedido.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Col 1: Estado del Dispositivo Local */}
+          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${permissionState === 'granted' ? 'bg-green-500 animate-pulse' : 'bg-brand-orange'}`} />
+                <h4 className="font-bold text-base text-brand-black">Estado del Dispositivo</h4>
+              </div>
+
+              <div className="text-sm space-y-1">
+                {permissionState === 'granted' ? (
+                  <p className="text-gray-500 font-medium">
+                    ¡Vinculado con éxito! Este dispositivo recibirá alertas de nuevos pedidos de inmediato.
+                  </p>
+                ) : permissionState === 'denied' ? (
+                  <p className="text-brand-orange font-bold">
+                    Mensajes bloqueados. Por favor habilita permisos de notificaciones para este sitio web en el celular o PC.
+                  </p>
+                ) : (
+                  <p className="text-gray-400 font-medium">
+                    Aún no has activado notificaciones. Presiona el botón de abajo para sincronizar.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-100 flex flex-wrap gap-3">
+              {permissionState !== 'granted' ? (
+                <button
+                  type="button"
+                  onClick={handleRequestPermission}
+                  className="px-5 py-3 bg-brand-black text-white hover:bg-brand-orange font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                >
+                  Sincronizar Dispositivo
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleTestNotification}
+                  disabled={!!testNotificationStatus && testNotificationStatus.includes('Enviando')}
+                  className="px-5 py-3 btn-outline text-brand-black font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                >
+                  {testNotificationStatus || "Enviar Alerta de Prueba 🔔"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Col 2: Credencial de Servidor (FCM Key) */}
+          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 block">
+              FCM Server Key (Clave del Servidor Legacy)
+            </label>
+            <input
+              type="password"
+              value={pwaSettings.fcmServerKey || ''}
+              onChange={(e) => setPwaSettings({...pwaSettings, fcmServerKey: e.target.value})}
+              onBlur={(e) => handleSaveField('fcmServerKey', e.target.value)}
+              className="w-full px-5 py-4 bg-white rounded-2xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black"
+              placeholder="AIzaSy..."
+            />
+            <p className="text-gray-400 text-xs leading-relaxed">
+              La FCM Server Key vincula Firebase con tu backend. Esto habilita las notificaciones en segundo plano para Capacitor y dispositivos IOS y Android en modo PWA.
+            </p>
+          </div>
         </div>
       </div>
 

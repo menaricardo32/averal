@@ -77,3 +77,49 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+// Push notification event handlers
+self.addEventListener('push', (event) => {
+  let data = { title: 'Averal Cosméticos', body: 'Se ha recibido una nueva actualización.' };
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { title: 'Averal Cosméticos', body: event.data.text() };
+    }
+  }
+
+  const options = {
+    body: data.body || data.message || '',
+    icon: 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81',
+    badge: 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81',
+    vibrate: [200, 100, 200],
+    data: {
+      url: data.url || '/admin'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.url || '/admin';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        const clientPath = new URL(client.url).pathname;
+        if (clientPath === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+

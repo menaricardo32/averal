@@ -55,7 +55,10 @@ export default function Home() {
   return (
     <div className="space-y-24">
       {/* Hero Section */}
-      <section className="relative min-h-[600px] md:min-h-[80vh] lg:h-screen flex items-center overflow-hidden bg-brand-black py-12 md:py-20">
+      <section 
+        className="relative min-h-[600px] md:min-h-[80vh] lg:h-screen flex items-center overflow-hidden bg-brand-black pb-12"
+        style={{ paddingTop: 'calc(7.5rem + env(safe-area-inset-top, 0px))' }}
+      >
         <div className="absolute inset-0 z-0">
           {showVideo ? (
             <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">

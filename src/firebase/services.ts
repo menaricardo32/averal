@@ -90,11 +90,35 @@ export const getOrders = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
 };
 
-export const addOrder = (order: Omit<Order, "id" | "createdAt">) => {
-  return addDoc(ordersRef, {
+export const addOrder = async (order: Omit<Order, "id" | "createdAt">) => {
+  const docRef = await addDoc(ordersRef, {
     ...order,
     createdAt: serverTimestamp()
   });
+
+  try {
+    const formattedTotal = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(order.totalPrice);
+
+    const clientName = order.customerName || 'Cliente de Averal';
+
+    // Disparar en segundo plano la notificación push sin retrasar la respuesta
+    fetch('/api/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '🛒 ¡Nuevo Pedido Recibido!',
+        body: `Total: ${formattedTotal} - de ${clientName}`,
+        url: '/admin'
+      })
+    }).catch(err => console.warn('Disparo silencioso de push omitido:', err));
+  } catch (e) {
+    console.warn('Error al preparar datos de notificación:', e);
+  }
+
+  return docRef;
 };
 
 export const updateOrder = (id: string, order: Partial<Order>) => {

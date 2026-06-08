@@ -108,6 +108,86 @@ async function startServer() {
     }
   });
 
+  // API Endpoint to Send Push Notifications of New Orders to Admins
+  app.post('/api/send-push', async (req, res) => {
+    try {
+      const { title, body, url } = req.body;
+      const { doc, getDoc, collection, getDocs, setDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('./src/firebase/config');
+
+      // Fetch PWA Config for FCM Legacy Server Key
+      const pwaSnap = await getDoc(doc(db, 'settings', 'pwa'));
+      const fcmServerKey = pwaSnap.exists() ? pwaSnap.data().fcmServerKey : null;
+
+      // Also store a real-time backup notification document so that active web admins get real-time triggers
+      const notificationRef = doc(collection(db, 'admin_notifications'));
+      await setDoc(notificationRef, {
+        title,
+        body,
+        url,
+        createdAt: serverTimestamp()
+      });
+
+      // Fetch registered tokens
+      const tokensSnap = await getDocs(collection(db, 'admin_push_tokens'));
+      const tokens = tokensSnap.docs.map(doc => doc.id).filter(Boolean);
+
+      if (tokens.length === 0) {
+        return res.json({ success: true, message: "No registered push tokens found to notify." });
+      }
+
+      console.log(`Sending push notification "${title}": "${body}" to ${tokens.length} devices.`);
+
+      if (!fcmServerKey) {
+        return res.json({ 
+          success: true, 
+          message: "Saved in admin_notifications logs. Configure FCM Server Key in PWA Settings to deliver native pushes." 
+        });
+      }
+
+      // Deliver to FCM native push endpoints
+      const results = [];
+      for (const token of tokens) {
+        if (token.startsWith('web_channel_')) {
+          // This is a browser web tab simulation token, it already listens via Firestore real-time listener!
+          continue;
+        }
+
+        try {
+          const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `key=${fcmServerKey}`
+            },
+            body: JSON.stringify({
+              to: token,
+              notification: {
+                title,
+                body,
+                sound: 'default',
+                click_action: url || '/admin'
+              },
+              data: {
+                url: url || '/admin'
+              }
+            })
+          });
+          const resJson = await response.json();
+          results.push({ token, status: response.status, response: resJson });
+        } catch (e: any) {
+          console.error(`Failed to send FCM to token ${token}:`, e);
+          results.push({ token, status: 'failed', error: e.message });
+        }
+      }
+
+      res.json({ success: true, results });
+    } catch (error: any) {
+      console.error('Error sending push notifications:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // API Endpoint for AI Product Descriptions
   app.post('/api/ai/generate-descriptions', async (req, res) => {
     try {
