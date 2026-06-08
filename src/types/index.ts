@@ -306,7 +306,10 @@ export interface PWASettings {
   orientation: 'any' | 'portrait' | 'landscape';
   icon192: string;
   icon512: string;
+}export interface GoogleAuthSettings {
+  clientId: string;
+  reversedClientId: string;
+  bundleId: string;
 }
-
 
 

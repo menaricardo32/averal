@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
+  signInWithCredential,
+  GoogleAuthProvider,
   signOut, 
   User 
 } from 'firebase/auth';
@@ -9,6 +11,8 @@ import { auth, googleProvider } from './config';
 import { UserProfile } from '../types';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './config';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 interface AuthContextType {
   user: User | null;
@@ -84,9 +88,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     try {
-      // Usamos explícitamente signInWithPopup en lugar de signInWithRedirect para evitar el error
-      // 'Unable to process request due to missing initial state' en WebViews de Capacitor iOS y Android.
-      await signInWithPopup(auth, googleProvider);
+      if (Capacitor.isNativePlatform()) {
+        console.log("Iniciando sesión nativa con Google Auth de Capacitor...");
+        
+        // Obtener configuración personalizada de Firestore o usar valores por defecto del usuario
+        let clientId = '713282007540-pur3iksqjq7fg2lofifnrmipu7bsndf9.apps.googleusercontent.com';
+        try {
+          const docRef = doc(db, 'settings', 'google_auth');
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            clientId = docSnap.data().clientId || clientId;
+          }
+        } catch (dbErr) {
+          console.warn("No se pudo obtener la configuración de Google de Firestore, usando valores predeterminados:", dbErr);
+        }
+
+        // Inicializar Google Auth en Capacitor
+        GoogleAuth.initialize({
+          clientId: clientId,
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
+
+        // Iniciar sesión nativamente
+        const googleUser = await GoogleAuth.signIn();
+        if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
+          const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+          await signInWithCredential(auth, credential);
+          console.log("Sesión nativa con Google Auth exitosa.");
+        } else {
+          throw new Error('No se recibió token de autenticación de Google Auth.');
+        }
+      } else {
+        // Fallback para entorno Web estándar
+        await signInWithPopup(auth, googleProvider);
+      }
     } catch (error: any) {
       console.error("Error durante el inicio de sesión con Google:", error);
       // Proveer feedback útil si ocurre un fallo de autenticación en WebView

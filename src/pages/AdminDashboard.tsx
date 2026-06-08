@@ -52,10 +52,11 @@ import { Product, Category, BrandingSettings, GalleryImage, FAQ, Location, Revie
 import PromotionsManager from '../components/PromotionsManager';
 import ShippingManager from '../components/ShippingManager';
 import { PayPalSettingsSection } from '../components/PayPalSettingsSection';
+import { GoogleSettingsSection } from '../components/GoogleSettingsSection';
 import { 
   Plus, Trash2, Edit2, X, Save, LayoutDashboard, Package, Tags, LogOut, Palette, Upload, CheckCircle2, Menu, Image as ImageIcon, Loader2,
   Edit3, FileDown, MessageCircle, Share2, HelpCircle, Phone, Mail, Clock, Settings, FileText, Eye, ShieldCheck, Star, MapPin, Search, ShoppingBag, Facebook, Instagram, Linkedin, Youtube, Twitter,
-  User, Truck, CreditCard, Sliders, Ticket, Smartphone
+  User, Truck, CreditCard, Sliders, Ticket, Smartphone, Chrome
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'atributos' | 'categories' | 'branding' | 'pwa' | 'gallery' | 'reviews' | 'orders' | 'whatsapp' | 'social' | 'faqs' | 'contact' | 'legal' | 'admins' | 'promotions' | 'shipping' | 'paypal'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'atributos' | 'categories' | 'branding' | 'pwa' | 'gallery' | 'reviews' | 'orders' | 'whatsapp' | 'social' | 'faqs' | 'contact' | 'legal' | 'admins' | 'promotions' | 'shipping' | 'paypal' | 'google_auth'>('dashboard');
   const [atributos, setAtributos] = useState<Atributo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
@@ -447,6 +448,7 @@ export default function AdminDashboard() {
                   { id: 'faqs', label: 'Preguntas Frecuentes', icon: HelpCircle },
                   { id: 'contact', label: 'Contacto', icon: Phone },
                   { id: 'legal', label: 'Aviso Legal', icon: FileText },
+                  { id: 'google_auth', label: 'Google Config', icon: Chrome },
                   { id: 'admins', label: 'Administradores', icon: ShieldCheck },
                 ].map((item) => {
                   const isActive = activeTab === item.id;
@@ -546,6 +548,7 @@ export default function AdminDashboard() {
             { id: 'faqs', label: 'Preguntas Frecuentes', icon: HelpCircle },
             { id: 'contact', label: 'Contacto', icon: Phone },
             { id: 'legal', label: 'Aviso Legal', icon: FileText },
+            { id: 'google_auth', label: 'Google Config', icon: Chrome },
             { id: 'admins', label: 'Administradores', icon: ShieldCheck },
           ].map((item) => {
             const isActive = activeTab === item.id;
@@ -604,6 +607,7 @@ export default function AdminDashboard() {
                  activeTab === 'faqs' ? 'Preguntas Frecuentes' :
                  activeTab === 'contact' ? 'Datos de Contacto' :
                  activeTab === 'legal' ? 'Aviso Legal' :
+                  activeTab === 'google_auth' ? 'Credenciales de Google' :
                  activeTab === 'admins' ? 'Administradores Permitidos' :
                  activeTab === 'reviews' ? 'Gestión de Reseñas' :
                   'Galería de Imágenes'}
@@ -624,6 +628,7 @@ export default function AdminDashboard() {
                  activeTab === 'faqs' ? 'Gestiona las preguntas frecuentes que aparecen en la web.' :
                  activeTab === 'contact' ? 'Administra los medios de contacto y ubicaciones físicas.' :
                  activeTab === 'legal' ? 'Configura los textos legales de privacidad y términos.' :
+                  activeTab === 'google_auth' ? 'Administra el Client ID y parámetros OAuth de Google Auth para móviles.' :
                  'Gestiona los correos de Gmail con acceso al panel de administración.'}
               </p>
             </div>
@@ -988,6 +993,8 @@ export default function AdminDashboard() {
             <ContactSection openConfirm={openConfirm} />
           ) : activeTab === 'legal' ? (
             <LegalSection />
+          ) : activeTab === 'google_auth' ? (
+            <GoogleSettingsSection />
           ) : activeTab === 'reviews' ? (
             <ReviewsSection openConfirm={openConfirm} />
           ) : activeTab === 'promotions' ? (

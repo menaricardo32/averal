@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./config";
-import { Product, Category, BrandingSettings, GalleryImage, WebContent, FAQ, Location, Review, Order, Atributo, Promotion, ShippingMethod, ShippingRestrictions, PayPalSettings } from "../types";
+import { Product, Category, BrandingSettings, GalleryImage, WebContent, FAQ, Location, Review, Order, Atributo, Promotion, ShippingMethod, ShippingRestrictions, PayPalSettings, GoogleAuthSettings } from "../types";
 
 const PRODUCTS_COLLECTION = "products";
 const CATEGORIES_COLLECTION = "categories";
@@ -524,6 +524,25 @@ export const getPayPalSettings = async (): Promise<PayPalSettings> => {
 export const updatePayPalSettings = async (paypal: Partial<PayPalSettings>) => {
   const docRef = doc(db, SETTINGS_COLLECTION, "paypal");
   return setDoc(docRef, paypal, { merge: true });
+};
+
+// Google Auth Settings
+export const getGoogleAuthSettings = async (): Promise<GoogleAuthSettings> => {
+  const docRef = doc(db, SETTINGS_COLLECTION, "google_auth");
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data() as GoogleAuthSettings;
+  }
+  return {
+    clientId: '713282007540-pur3iksqjq7fg2lofifnrmipu7bsndf9.apps.googleusercontent.com',
+    reversedClientId: 'com.googleusercontent.apps.713282007540-pur3iksqjq7fg2lofifnrmipu7bsndf9',
+    bundleId: 'com.ricardo.averal'
+  };
+};
+
+export const updateGoogleAuthSettings = async (googleAuth: Partial<GoogleAuthSettings>) => {
+  const docRef = doc(db, SETTINGS_COLLECTION, "google_auth");
+  return setDoc(docRef, googleAuth, { merge: true });
 };
 
 
