@@ -71,7 +71,7 @@ function AppContent() {
       <FlyToHeart />
       <Navbar />
       <CartDrawer />
-      <main className={`flex-grow ${!isHome ? 'pt-20' : ''}`}>
+      <main className="flex-grow" style={!isHome ? { paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' } : undefined}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/catalog" element={<Catalog />} />

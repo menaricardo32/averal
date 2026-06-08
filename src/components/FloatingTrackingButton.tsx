@@ -119,7 +119,8 @@ export const FloatingTrackingButton: React.FC = () => {
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.8, x: -20 }}
             onClick={openModal}
-            className="fixed bottom-6 left-6 z-[100] bg-brand-black text-white px-5 py-4 rounded-full shadow-2xl hover:bg-brand-orange hover:shadow-brand-orange/25 transition-all duration-300 flex items-center space-x-3 group active:scale-95"
+            className="fixed left-6 z-[100] bg-brand-black text-white px-5 py-4 rounded-full shadow-2xl hover:bg-brand-orange hover:shadow-brand-orange/25 transition-all duration-300 flex items-center space-x-3 group active:scale-95"
+            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
             aria-label="Rastrear mi pedido"
           >
             <ShoppingCart size={22} className="group-hover:rotate-12 transition-transform duration-300" />
