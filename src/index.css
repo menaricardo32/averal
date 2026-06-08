@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-orange: var(--primary-color, #ea9900);
+  --color-brand-black: var(--secondary-color, #000000);
+  --color-brand-background: var(--bg-color, #ffffff);
+  --color-brand-text: var(--text-color, #000000);
+  
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-background text-brand-text font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold text-brand-text;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-orange text-white px-6 py-3 rounded-md font-bold transition-all hover:bg-brand-orange/90 active:scale-95;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-brand-orange text-brand-orange px-6 py-3 rounded-md font-bold transition-all hover:bg-brand-orange hover:text-white active:scale-95;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-brand-orange rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand-orange/80;
+  }
+}
+
+@layer utilities {
+  @keyframes heart-jump {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+  }
+  .animate-heart-jump {
+    animation: heart-jump 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: #ef4444 !important;
+  }
+}

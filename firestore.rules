@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == 'menaricardo333@gmail.com' ||
+         exists(/databases/$(database)/documents/allowed_admins/$(request.auth.token.email)));
+    }
+
+    // Products, Categories & Promotions: Publicly readable, Admin writable
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /promotions/{promotionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Gallery: Publicly readable, Admin writable
+    match /galeria/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Settings (Branding & Content): Publicly readable, Admin writable
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // FAQs: Publicly readable, Admin writable
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Locations: Publicly readable, Admin writable
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Reviews: Publicly readable, Admin writable
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Stats: Publicly readable (for dashboard), Admin writable
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if true; // Allow incrementing visits from client
+    }
+
+    // Allowed Admins: Only Admin can read/write
+    match /allowed_admins/{email} {
+      allow read: if isAuthenticated() && (request.auth.token.email == email || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Users: Private, Admin can read all
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId || isAdmin();
+    }
+
+    // Shipping Methods: Publicly readable, admin writable + clients can update guide stock
+    match /shipping_methods/{shippingMethodId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if true;
+    }
+
+    // Shipping Restrictions: Publicly readable, admin writeable
+    match /shipping_restrictions/{restrictionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: Anyone can place an order, only admins can view or resolve them
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

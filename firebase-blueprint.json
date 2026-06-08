@@ -1,0 +1,148 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Equipment available in the catalog",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "number" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "serie": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "specs": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "brand", "model", "year", "category", "description", "images"]
+    },
+    "AllowedAdmin": {
+      "title": "Allowed Admin",
+      "description": "Email address allowed to access the admin panel",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" }
+      },
+      "required": ["email"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer testimonial",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "text": { "type": "string" },
+        "rating": { "type": "number" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "photoUrl", "text", "rating"]
+    },
+    "GalleryImage": {
+      "title": "Gallery Image",
+      "description": "Image stored in the global gallery",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "name": { "type": "string" },
+        "size": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["url", "name", "size"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "showPreloader": { "type": "boolean" },
+        "logoDark": { "type": "string" },
+        "logoLight": { "type": "string" },
+        "isotypeDark": { "type": "string" },
+        "isotypeLight": { "type": "string" }
+      }
+    },
+    "Promotion": {
+      "title": "Promotion",
+      "description": "Discount coupon code for promotions",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountType": { "type": "string", "enum": ["percentage", "fixed"] },
+        "discountValue": { "type": "number" },
+        "minPurchase": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "discountType", "discountValue", "isActive"]
+    },
+    "ShippingMethod": {
+      "title": "ShippingMethod",
+      "description": "Shipping provider and prepaid service options",
+      "type": "object",
+      "properties": {
+        "providerName": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "deliveryDays": { "type": "string" },
+        "baseCost": { "type": "number" },
+        "minPurchaseForFree": { "type": "number" },
+        "purchasedGuides": { "type": "number" },
+        "usedGuides": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["providerName", "serviceName", "deliveryDays", "baseCost", "purchasedGuides", "usedGuides", "isActive"]
+    },
+    "ShippingRestrictions": {
+      "title": "ShippingRestrictions",
+      "description": "Geographical delivery restrictions setup by states and zip-codes",
+      "type": "object",
+      "properties": {
+        "blockedStates": { "type": "array", "items": { "type": "string" } },
+        "blockedPrefixes": { "type": "array", "items": { "type": "string" } },
+        "customMessage": { "type": "string" }
+      },
+      "required": ["blockedStates", "blockedPrefixes", "customMessage"]
+    }
+  },
+  "firestore": {
+    "/shipping_restrictions/{restrictionId}": {
+      "schema": "ShippingRestrictions",
+      "description": "Blacklisted geographical zones, prefixes, and states restrictions"
+    },
+    "/shipping_methods/{shippingMethodId}": {
+      "schema": "ShippingMethod",
+      "description": "Collection of configured shipping carriers, rates, and prepaid guide stocks"
+    },
+    "/promotions/{promotionId}": {
+      "schema": "Promotion",
+      "description": "Collection of promotions and discount coupon codes"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products"
+    },
+    "/allowed_admins/{email}": {
+      "schema": "AllowedAdmin",
+      "description": "Whitelist of admin emails"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer reviews"
+    },
+    "/galeria/{imageId}": {
+      "schema": "GalleryImage",
+      "description": "Global image gallery"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Configuration settings"
+    }
+  }
+}
