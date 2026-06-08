@@ -55,7 +55,7 @@ import { PayPalSettingsSection } from '../components/PayPalSettingsSection';
 import { 
   Plus, Trash2, Edit2, X, Save, LayoutDashboard, Package, Tags, LogOut, Palette, Upload, CheckCircle2, Menu, Image as ImageIcon, Loader2,
   Edit3, FileDown, MessageCircle, Share2, HelpCircle, Phone, Mail, Clock, Settings, FileText, Eye, ShieldCheck, Star, MapPin, Search, ShoppingBag, Facebook, Instagram, Linkedin, Youtube, Twitter,
-  User, Truck, CreditCard, Sliders, Ticket
+  User, Truck, CreditCard, Sliders, Ticket, Smartphone
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -79,10 +79,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ref, uploadBytes, getDownloadURL, deleteObject, ref as storageRef } from 'firebase/storage';
-import { storage } from '../firebase/config';
+import { storage, db } from '../firebase/config';
 import { useBranding } from '../firebase/BrandingContext';
 import { useContent } from '../firebase/ContentContext';
-import { onSnapshot, query, orderBy } from 'firebase/firestore';
+import { onSnapshot, query, orderBy, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import ProductForm from '../components/ProductForm';
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'atributos' | 'categories' | 'branding' | 'gallery' | 'reviews' | 'orders' | 'whatsapp' | 'social' | 'faqs' | 'contact' | 'legal' | 'admins' | 'promotions' | 'shipping' | 'paypal'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'atributos' | 'categories' | 'branding' | 'pwa' | 'gallery' | 'reviews' | 'orders' | 'whatsapp' | 'social' | 'faqs' | 'contact' | 'legal' | 'admins' | 'promotions' | 'shipping' | 'paypal'>('dashboard');
   const [atributos, setAtributos] = useState<Atributo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
@@ -431,6 +431,7 @@ export default function AdminDashboard() {
                   { id: 'atributos', label: 'Atributos', icon: Sliders },
                   { id: 'categories', label: 'Categorías', icon: Tags },
                   { id: 'branding', label: 'Branding', icon: Palette },
+                  { id: 'pwa', label: 'PWA Config', icon: Smartphone },
                   { id: 'paypal', label: 'PayPal Settings', icon: CreditCard },
                   { id: 'gallery', label: 'Galería', icon: ImageIcon },
                   { id: 'reviews', label: 'Reseñas', icon: Star },
@@ -529,6 +530,7 @@ export default function AdminDashboard() {
             { id: 'atributos', label: 'Atributos', icon: Sliders },
             { id: 'categories', label: 'Categorías', icon: Tags },
             { id: 'branding', label: 'Branding', icon: Palette },
+            { id: 'pwa', label: 'PWA Config', icon: Smartphone },
             { id: 'paypal', label: 'PayPal Settings', icon: CreditCard },
             { id: 'gallery', label: 'Galería', icon: ImageIcon },
             { id: 'reviews', label: 'Reseñas', icon: Star },
@@ -588,6 +590,7 @@ export default function AdminDashboard() {
                  activeTab === 'atributos' ? 'Gestión de Atributos' :
                  activeTab === 'categories' ? 'Gestión de Categorías' : 
                  activeTab === 'branding' ? 'Identidad de Marca' : 
+                 activeTab === 'pwa' ? 'Configuración PWA' : 
                  activeTab === 'paypal' ? 'Configuración de PayPal' :
                  activeTab === 'whatsapp' ? 'Configuración WhatsApp' :
                  activeTab === 'social' ? 'Redes Sociales' :
@@ -605,6 +608,7 @@ export default function AdminDashboard() {
                  activeTab === 'shipping' ? 'Configura proveedores de entregas, inventario de guías y reglas de envío gratis.' :
                  activeTab === 'atributos' ? 'Define y administra los ejes de personalización globales para tus productos.' :
                  activeTab === 'branding' ? 'Configura los logotipos y variantes visuales de la empresa.' : 
+                 activeTab === 'pwa' ? 'Configura el nombre de la app, el color del tema, los iconos de la home-screen y el comportamiento PWA.' : 
                  activeTab === 'paypal' ? 'Establece y administra las credenciales y entornos para transacciones con PayPal.' :
                  activeTab === 'gallery' ? 'Sube y administra las imágenes para el catálogo y el sitio.' : 
                  activeTab === 'reviews' ? 'Administra las reseñas de tus clientes para mostrar en la web.' :
@@ -963,6 +967,8 @@ export default function AdminDashboard() {
             />
           ) : activeTab === 'branding' ? (
             <BrandingSection />
+          ) : activeTab === 'pwa' ? (
+            <PWASection />
           ) : activeTab === 'paypal' ? (
             <PayPalSettingsSection />
           ) : activeTab === 'whatsapp' ? (
@@ -1975,6 +1981,273 @@ const AtributosSection = ({ atributos, onSave, onEdit, onDelete }: {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+const PWASection = () => {
+  const [pwaSettings, setPwaSettings] = useState<any>({
+    name: "Averal Cosméticos México",
+    shortName: "Averal",
+    description: "Productos 100% naturales y orgánicos para el cuidado de tu piel y cabello. Porque la mejor cosmética nace de la naturaleza.",
+    themeColor: "#1d2425",
+    backgroundColor: "#e9eaec",
+    displayMode: "standalone",
+    orientation: "portrait",
+    icon192: "",
+    icon512: ""
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [editingField, setEditingField] = useState<'icon192' | 'icon512' | null>(null);
+
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'pwa');
+    const unsub = onSnapshot(docRef, (snap) => {
+      if (snap.exists()) {
+        setPwaSettings(snap.data());
+      }
+      setIsLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSaveField = async (field: string, value: any) => {
+    setIsSaving(true);
+    try {
+      const docRef = doc(db, 'settings', 'pwa');
+      await setDoc(docRef, { [field]: value }, { merge: true });
+    } catch (e) {
+      console.error("Error updating PWA field:", e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSelectIcon = async (url: string) => {
+    if (!editingField) return;
+    setIsSaving(true);
+    try {
+      const docRef = doc(db, 'settings', 'pwa');
+      await setDoc(docRef, { [editingField]: url }, { merge: true });
+    } catch (e) {
+      console.error("Error updating PWA icon:", e);
+    } finally {
+      setIsSaving(false);
+      setIsSelectorOpen(false);
+      setEditingField(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="animate-spin text-brand-orange" size={40} />
+      </div>
+    );
+  }
+
+  const defaultIcon = 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81';
+
+  return (
+    <div className="space-y-8">
+      {/* PWA Settings Form */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+        <div>
+          <h3 className="font-black text-xl tracking-tighter uppercase mb-1">Configuración del Manifiesto</h3>
+          <p className="text-gray-400 text-sm">Define cómo se presentará la aplicación al instalarse en teléfonos o computadoras de tus clientes.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 col-gap-8">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Nombre de la Aplicación</label>
+            <input 
+              type="text"
+              value={pwaSettings.name}
+              onChange={(e) => setPwaSettings({...pwaSettings, name: e.target.value})}
+              onBlur={(e) => handleSaveField('name', e.target.value)}
+              className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black"
+              placeholder="e.g. Averal Cosméticos México"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Nombre Corto de la Aplicación (Homescreen)</label>
+            <input 
+              type="text"
+              value={pwaSettings.shortName || ''}
+              onChange={(e) => setPwaSettings({...pwaSettings, shortName: e.target.value})}
+              onBlur={(e) => handleSaveField('shortName', e.target.value)}
+              className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black"
+              placeholder="e.g. Averal"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Descripción de la App</label>
+            <textarea 
+              value={pwaSettings.description || ''}
+              onChange={(e) => setPwaSettings({...pwaSettings, description: e.target.value})}
+              onBlur={(e) => handleSaveField('description', e.target.value)}
+              rows={3}
+              className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black resize-none"
+              placeholder="Escribe una breve descripción del propósito de la aplicación..."
+            />
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 block">Color del Tema (Theme Color)</label>
+            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-brand-orange transition-all">
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-inner border border-gray-200">
+                <input 
+                  type="color" 
+                  value={pwaSettings.themeColor || '#1d2425'} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPwaSettings({...pwaSettings, themeColor: val});
+                    handleSaveField('themeColor', val);
+                  }}
+                  className="absolute inset-x-0 -inset-y-4 w-full h-[150%] cursor-pointer border-none bg-transparent"
+                />
+              </div>
+              <div className="flex-grow">
+                <input 
+                  type="text" 
+                  value={pwaSettings.themeColor || '#1d2425'} 
+                  onChange={(e) => setPwaSettings({...pwaSettings, themeColor: e.target.value})}
+                  onBlur={(e) => handleSaveField('themeColor', e.target.value)}
+                  className="w-full bg-transparent border-none focus:ring-0 font-mono text-sm font-bold uppercase p-0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 block">Color de Fondo (Splash Screen)</label>
+            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-brand-orange transition-all">
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-inner border border-gray-200">
+                <input 
+                  type="color" 
+                  value={pwaSettings.backgroundColor || '#e9eaec'} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPwaSettings({...pwaSettings, backgroundColor: val});
+                    handleSaveField('backgroundColor', val);
+                  }}
+                  className="absolute inset-x-0 -inset-y-4 w-full h-[150%] cursor-pointer border-none bg-transparent"
+                />
+              </div>
+              <div className="flex-grow">
+                <input 
+                  type="text" 
+                  value={pwaSettings.backgroundColor || '#e9eaec'} 
+                  onChange={(e) => setPwaSettings({...pwaSettings, backgroundColor: e.target.value})}
+                  onBlur={(e) => handleSaveField('backgroundColor', e.target.value)}
+                  className="w-full bg-transparent border-none focus:ring-0 font-mono text-sm font-bold uppercase p-0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Modo de Visualización (Display)</label>
+            <select
+              value={pwaSettings.displayMode || 'standalone'}
+              onChange={(e) => {
+                setPwaSettings({...pwaSettings, displayMode: e.target.value});
+                handleSaveField('displayMode', e.target.value);
+              }}
+              className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black"
+            >
+              <option value="standalone">Standalone (Recomendado - Parece App nativa)</option>
+              <option value="fullscreen">Fullscreen (Pantalla completa sin barra de estado)</option>
+              <option value="minimal-ui">Minimal UI (Barra de navegación minimalista)</option>
+              <option value="browser">Browser (Navegador normal)</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Orientación Forzada</label>
+            <select
+              value={pwaSettings.orientation || 'portrait'}
+              onChange={(e) => {
+                setPwaSettings({...pwaSettings, orientation: e.target.value});
+                handleSaveField('orientation', e.target.value);
+              }}
+              className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange font-bold text-sm transition-all text-brand-black"
+            >
+              <option value="any">Cualquiera (Multidireccional)</option>
+              <option value="portrait">Vertical fija (Recomendado - Portrait)</option>
+              <option value="landscape">Horizontal fija (Landscape)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* PWA Icon Management */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Icon 192x192 */}
+        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-lg mb-1">Icono de Pantalla de Inicio (192x192)</h3>
+          <p className="text-gray-400 text-sm mb-6">Icono oficial que se colocará en la pantalla de inicio del teléfono.</p>
+          
+          <div className="aspect-square w-32 h-32 mx-auto rounded-2xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-200 relative overflow-hidden bg-gray-50">
+            <img 
+              src={pwaSettings.icon192 || defaultIcon} 
+              alt="Icono PWA 192" 
+              className="w-full h-full object-contain p-2" 
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          <button 
+            onClick={() => {
+              setEditingField('icon192');
+              setIsSelectorOpen(true);
+            }}
+            className="btn-outline w-full flex items-center justify-center space-x-2 animate-all"
+          >
+            <ImageIcon size={18} />
+            <span>{pwaSettings.icon192 ? 'Cambiar Icono 192px' : 'Subir Icono 192px'}</span>
+          </button>
+        </div>
+
+        {/* Icon 512x512 */}
+        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-lg mb-1">Icono de Splash (512x512)</h3>
+          <p className="text-gray-400 text-sm mb-6">Utilizado para la pantalla de carga inicial o de presentación de tu PWA.</p>
+          
+          <div className="aspect-square w-32 h-32 mx-auto rounded-2xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-200 relative overflow-hidden bg-gray-50">
+            <img 
+              src={pwaSettings.icon512 || defaultIcon} 
+              alt="Icono PWA 512" 
+              className="w-full h-full object-contain p-2" 
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          <button 
+            onClick={() => {
+              setEditingField('icon512');
+              setIsSelectorOpen(true);
+            }}
+            className="btn-outline w-full flex items-center justify-center space-x-2 animate-all"
+          >
+            <ImageIcon size={18} />
+            <span>{pwaSettings.icon512 ? 'Cambiar Icono 512px' : 'Subir Icono 512px'}</span>
+          </button>
+        </div>
+      </div>
+
+      <GalleryModal 
+        isOpen={isSelectorOpen}
+        onClose={() => {
+          setIsSelectorOpen(false);
+          setEditingField(null);
+        }}
+        onSelect={(urls) => handleSelectIcon(urls[0])}
+      />
     </div>
   );
 };

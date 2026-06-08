@@ -296,5 +296,17 @@ export interface PayPalSettings {
   productionClientSecret: string;
 }
 
+export interface PWASettings {
+  name: string;
+  shortName: string;
+  description: string;
+  themeColor: string;
+  backgroundColor: string;
+  displayMode: 'standalone' | 'minimal-ui' | 'fullscreen' | 'browser';
+  orientation: 'any' | 'portrait' | 'landscape';
+  icon192: string;
+  icon512: string;
+}
+
 
 

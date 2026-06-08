@@ -25,7 +25,8 @@ export const FloatingToolbar: React.FC = () => {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[400] w-full max-w-md px-4"
+          className="fixed left-1/2 -translate-x-1/2 z-[400] w-full max-w-md px-4"
+          style={{ bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <div className="bg-brand-black text-white p-4 rounded-[2rem] shadow-2xl border border-white/10 backdrop-blur-xl flex items-center justify-between">
             <div className="flex items-center space-x-3 px-2">

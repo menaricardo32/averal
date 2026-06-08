@@ -24,6 +24,90 @@ async function startServer() {
   app.use(cors());
   app.use(express.json({ limit: '50mb' }));
 
+  // API Endpoint for Dynamic PWA Manifest
+  app.get('/manifest.json', async (req, res) => {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('./src/firebase/config');
+      const docRef = doc(db, 'settings', 'pwa');
+      const docSnap = await getDoc(docRef);
+
+      const defaultIcon = 'https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81';
+
+      let pwaConfig = {
+        name: "Averal Cosméticos México",
+        short_name: "Averal",
+        description: "Productos 100% naturales y orgánicos para el cuidado de tu piel y cabello. Porque la mejor cosmética nace de la naturaleza.",
+        theme_color: "#1d2425",
+        background_color: "#e9eaec",
+        display: "standalone",
+        orientation: "portrait",
+        start_url: "/",
+        icons: [
+          {
+            src: defaultIcon,
+            sizes: "192x192",
+            type: "image/webp",
+            purpose: "any maskable"
+          },
+          {
+            src: defaultIcon,
+            sizes: "512x512",
+            type: "image/webp",
+            purpose: "any maskable"
+          }
+        ]
+      };
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        pwaConfig.name = data.name || pwaConfig.name;
+        pwaConfig.short_name = data.shortName || pwaConfig.short_name;
+        pwaConfig.description = data.description || pwaConfig.description;
+        pwaConfig.theme_color = data.themeColor || pwaConfig.theme_color;
+        pwaConfig.background_color = data.backgroundColor || pwaConfig.background_color;
+        pwaConfig.display = data.displayMode || pwaConfig.display;
+        pwaConfig.orientation = data.orientation || pwaConfig.orientation;
+        if (data.icon192) {
+          pwaConfig.icons[0].src = data.icon192;
+        }
+        if (data.icon512) {
+          pwaConfig.icons[1].src = data.icon512;
+        }
+      }
+
+      res.setHeader('Content-Type', 'application/manifest+json');
+      res.json(pwaConfig);
+    } catch (error) {
+      console.warn("Serving default manifest due to error:", error);
+      res.setHeader('Content-Type', 'application/manifest+json');
+      res.json({
+        name: "Averal Cosméticos México",
+        short_name: "Averal",
+        description: "Productos 100% naturales y orgánicos para el cuidado de tu piel y cabello.",
+        theme_color: "#1d2425",
+        background_color: "#e9eaec",
+        display: "standalone",
+        orientation: "portrait",
+        start_url: "/",
+        icons: [
+          {
+            src: "https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81",
+            sizes: "192x192",
+            type: "image/webp",
+            purpose: "any maskable"
+          },
+          {
+            src: "https://firebasestorage.googleapis.com/v0/b/cosmeticos-storeonline.firebasestorage.app/o/galeria%2F1780596645793_1_7._Si_mbolo_Oficial.webp?alt=media&token=af4e2dc4-b078-4890-9592-853367e92d81",
+            sizes: "512x512",
+            type: "image/webp",
+            purpose: "any maskable"
+          }
+        ]
+      });
+    }
+  });
+
   // API Endpoint for AI Product Descriptions
   app.post('/api/ai/generate-descriptions', async (req, res) => {
     try {

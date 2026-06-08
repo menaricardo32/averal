@@ -150,7 +150,7 @@ export const CartDrawer: React.FC = () => {
 
             {/* Footer Summary */}
             {items.length > 0 && (
-              <div className="p-8 bg-gray-50 rounded-t-[3rem]">
+              <div className="p-8 bg-gray-50 rounded-t-[3rem]" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
                 <div className="flex justify-between items-center mb-6 px-2">
                   <div>
                     <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Total a pagar</p>

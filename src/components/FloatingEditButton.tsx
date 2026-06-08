@@ -20,7 +20,8 @@ export const FloatingEditButton: React.FC = () => {
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={() => setIsEditing(true)}
-      className="fixed bottom-8 left-8 z-[350] bg-brand-orange text-white p-4 rounded-full shadow-2xl hover:shadow-brand-orange/20 transition-all flex items-center justify-center"
+      className="fixed left-8 z-[350] bg-brand-orange text-white p-4 rounded-full shadow-2xl hover:shadow-brand-orange/20 transition-all flex items-center justify-center"
+      style={{ bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
       title="Activar Modo Edición"
     >
       <Edit3 size={24} />
