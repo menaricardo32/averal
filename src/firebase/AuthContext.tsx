@@ -83,7 +83,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async () => {
-    await signInWithPopup(auth, googleProvider);
+    try {
+      // Usamos explícitamente signInWithPopup en lugar de signInWithRedirect para evitar el error
+      // 'Unable to process request due to missing initial state' en WebViews de Capacitor iOS y Android.
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error("Error durante el inicio de sesión con Google:", error);
+      // Proveer feedback útil si ocurre un fallo de autenticación en WebView
+      if (error?.code === 'auth/operation-not-supported-in-this-environment') {
+        alert("El inicio de sesión mediante popup no está soportado en este entorno. Asegúrate de estar ejecutando la app en un entorno web o con los plugins de Capacitor correspondientes.");
+      } else {
+        alert(`Error al iniciar sesión: ${error?.message || error}`);
+      }
+      throw error;
+    }
   };
 
   const logout = async () => {
