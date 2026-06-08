@@ -290,7 +290,7 @@ export default function Navbar() {
               </button>
             ) : (
               <button
-                onClick={login}
+                onClick={() => navigate('/admin')}
                 className={`flex items-center space-x-2 text-sm font-bold hover:text-brand-orange ${isTransparent ? 'text-white' : 'text-brand-black'}`}
               >
                 <User size={18} />
@@ -648,7 +648,7 @@ export default function Navbar() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
-                    onClick={() => { login(); setIsOpen(false); }}
+                    onClick={() => { navigate('/admin'); setIsOpen(false); }}
                     className="btn-primary w-full flex items-center justify-center space-x-2"
                   >
                     <User size={20} />
